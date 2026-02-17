@@ -258,6 +258,12 @@ Working directory: $REPO_DIR
 Task to commit: $task_id
 Task file: $task_file
 
+## Step 0 — Read your role definition first
+
+Read ~/.claude/skills/committer/SKILL.md for the full role, quality gates,
+commit format, and workflow. Then read $REPO_DIR/.claude/skills/committer/SKILL.md
+for SEFI-specific additions. All of those rules apply to this task.
+
 ## Instructions
 
 1. Run: python -m pytest $REPO_DIR/tests/ -q
