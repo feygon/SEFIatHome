@@ -1,0 +1,113 @@
+{
+  "project": "SEFI@Home",
+  "branchName": "ralph/mvp-prototype",
+  "description": "Zero-corpus MVP: FastAPI server with 2 work unit types (verify_finding, decision_chain)",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Download JSON exports",
+      "description": "As a developer, I need the rhowardstone JSON exports so I can generate work units",
+      "acceptanceCriteria": [
+        "persons_registry.json exists in data/ folder",
+        "knowledge_graph_entities.json exists in data/ folder",
+        "knowledge_graph_relationships.json exists in data/ folder",
+        "efta_dataset_mapping.json exists in data/ folder"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": "Download from https://github.com/rhowardstone/Epstein-research-data"
+    },
+    {
+      "id": "US-002",
+      "title": "EFTA URL builder",
+      "description": "As a work unit generator, I need to convert EFTA numbers to DOJ PDF URLs",
+      "acceptanceCriteria": [
+        "Function efta_to_url(efta_number, dataset) returns valid DOJ URL",
+        "Handles adjacent dataset fallback for gap ranges",
+        "Uses efta_dataset_mapping.json for dataset lookup"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": "URL pattern: https://www.justice.gov/epstein/files/DataSet%20{N}/EFTA{XXXXXXXX}.pdf"
+    },
+    {
+      "id": "US-003",
+      "title": "Work Unit data models",
+      "description": "As a developer, I need Pydantic models for work units and results",
+      "acceptanceCriteria": [
+        "WorkUnit model with unit_id, type, instructions, efta_urls, etc.",
+        "VerifyFindingResult model with claim, verdict, evidence, citations",
+        "DecisionChainResult model with actors, communications, timeline"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": "See ROADMAP.md for schema details"
+    },
+    {
+      "id": "US-004",
+      "title": "Findings SQLite store",
+      "description": "As a server, I need to persist submitted findings",
+      "acceptanceCriteria": [
+        "findings.db created with findings and citations tables",
+        "store_finding() function saves result with provenance",
+        "get_findings() retrieves by unit_type or efta_number"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": "Simple SQLite, no ORM needed for MVP"
+    },
+    {
+      "id": "US-005",
+      "title": "Work Unit Generator - verify_finding",
+      "description": "As a server, I need to generate verify_finding work units from rhowardstone claims",
+      "acceptanceCriteria": [
+        "Parses claims from rhowardstone reports",
+        "Generates work unit with claim text and cited EFTA URLs",
+        "Tracks which claims have been assigned/completed"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": "Linear scaling - one claim per unit"
+    },
+    {
+      "id": "US-006",
+      "title": "Work Unit Generator - decision_chain",
+      "description": "As a server, I need to generate decision_chain work units for NPA correspondence",
+      "acceptanceCriteria": [
+        "Generates batches of 20-50 documents from same time window",
+        "Uses persons_registry.json to identify relevant actors",
+        "Includes DOJ URLs for all documents in batch"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": "Multiplying scaling - concentration matters"
+    },
+    {
+      "id": "US-007",
+      "title": "FastAPI endpoints",
+      "description": "As a worker, I need API endpoints to claim work and submit results",
+      "acceptanceCriteria": [
+        "GET /work returns next available work unit",
+        "POST /result accepts finding submission",
+        "GET /status returns project stats"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": "No auth for MVP"
+    },
+    {
+      "id": "US-008",
+      "title": "End-to-end test",
+      "description": "As a developer, I need to verify the full workflow works",
+      "acceptanceCriteria": [
+        "Can claim a verify_finding unit via API",
+        "Can submit a result via API",
+        "Result appears in findings.db",
+        "GET /status reflects the submission"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": "Manual test with curl or httpie"
+    }
+  ]
+}

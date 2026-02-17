@@ -1,0 +1,12 @@
+# Ralph Progress Log
+Started: Initial setup
+---
+
+## Iteration 0 (Manual Setup)
+- Created ralph.sh loop runner
+- Created prd.json with 8 MVP user stories
+- Created CLAUDE.md agent instructions
+- Created AGENTS.md project documentation
+- Project ready for Ralph loops
+
+Next: US-001 - Download JSON exports from rhowardstone
