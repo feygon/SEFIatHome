@@ -189,7 +189,7 @@ Task file: $task_file
 
 ## Step 0 — Read your role definition first
 
-Read $REPO_DIR/.claude/skills/programmer/SKILL.md in full before doing anything else.
+Read ~/.claude/skills/programmer/SKILL.md in full before doing anything else.
 It defines your code standards, documentation requirements, and completion checklist.
 All of those rules apply to this task.
 
@@ -227,7 +227,7 @@ Task file: $task_file
 
 ## Step 0 — Read your role definition first
 
-Read $REPO_DIR/.claude/skills/tester/SKILL.md in full before doing anything else.
+Read ~/.claude/skills/tester/SKILL.md in full before doing anything else.
 It defines test documentation standards, fix plan management, and the Ralph loop protocol.
 
 ## Instructions
