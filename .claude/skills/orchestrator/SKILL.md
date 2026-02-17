@@ -33,7 +33,8 @@ You do NOT write code. You:
 1. Read /plans/requirements.md
 2. Create /todo/US-XXX.md for each task
 3. Identify dependencies and parallelization
-4. Gate: HITL approval of task breakdown
+4. Recommend which tasks can be done in parallel, and which can be assigned to Sonnet vs Opus
+5. Gate: HITL approval of task breakdown
 ```
 
 ### Phase 3: Implementation
@@ -42,30 +43,19 @@ You do NOT write code. You:
 
 1. Spawn Programmer subagents (Sonnet or Opus)
 2. Assign tasks from /todo/
-3. Programmers claim tasks, implement, AND document (see below)
+3. Programmers read and follow .claude/skills/programmer/SKILL.md (standards, docs, checklist)
 4. Coordinate API contracts via /docs/api-contracts.md
 5. Gate: API contract changes need HITL review
 ```
-
-#### Programmer documentation directive (MANDATORY — blocking)
-
-Every Programmer agent MUST produce, for each module they create or modify:
-- `/docs/api/<module_name>.md` — public API reference (classes, methods, signatures, usage example)
-- Docstrings on every public class, method, and function in source
-- Type annotations on every function signature
-
-Documentation is NOT optional. The Committer agent MUST verify
-`/docs/api/` files exist before committing. If missing, send back to Programmer.
 
 ### Phase 4: Testing
 ```
 /orchestrate test
 
 1. Spawn Tester subagents after each programmer completes
-2. Testers run tests, document in /testing/
+2. Testers read and follow .claude/skills/tester/SKILL.md (test standards, fix plan, Ralph loops)
 3. Failures → /todo/fix_plan.md
-4. Spawn Troubleshoot (Ralph) loops for fixes
-5. Gate: Epistemic review by Librarian
+4. Gate: Epistemic review by Librarian
 ```
 
 ### Phase 5: Documentation
@@ -80,12 +70,29 @@ Documentation is NOT optional. The Committer agent MUST verify
 
 ## Agent Communication Protocol
 
+### Skill Files
+
+Each subagent type has a canonical skill file that defines its complete role, standards, and checklist. **Always** direct subagents to read their skill file at the start of their prompt.
+
+| Agent type | Skill file |
+|------------|------------|
+| Programmer | `.claude/skills/programmer/SKILL.md` |
+| Tester | `.claude/skills/tester/SKILL.md` |
+| Troubleshoot (Ralph) | `.claude/skills/ralph/SKILL.md` |
+| Requirements Reviewer | `.claude/skills/requirements-reviewer/SKILL.md` |
+| Librarian | `.claude/skills/librarian/SKILL.md` |
+| Decomposer | `.claude/skills/decomposer/SKILL.md` |
+
 ### Spawning Agents
 ```python
 Task(
     subagent_type="general-purpose",
     model="sonnet",  # or "opus" for complex tasks
-    prompt="You are a Programmer. Claim /todo/US-001.md and implement it..."
+    prompt="""
+Read /path/to/repo/.claude/skills/programmer/SKILL.md first.
+Then claim /todo/US-001.md and implement it.
+Working directory: /path/to/repo
+"""
 )
 ```
 

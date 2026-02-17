@@ -187,60 +187,27 @@ Working directory: $REPO_DIR
 Your task: $task_id
 Task file: $task_file
 
+## Step 0 — Read your role definition first
+
+Read $REPO_DIR/.claude/skills/programmer/SKILL.md in full before doing anything else.
+It defines your code standards, documentation requirements, and completion checklist.
+All of those rules apply to this task.
+
 ## Instructions
 
 1. Read $task_file for requirements, acceptance criteria, and files to create.
 2. Read $REPO_DIR/ROADMAP.md and $REPO_DIR/plans/requirements.md for architecture context.
-3. Read $REPO_DIR/AGENTS.md for code conventions.
+3. Read $REPO_DIR/AGENTS.md for project-wide code conventions.
 4. Implement the task completely. All source files go under $REPO_DIR/src/.
 
-## Code Conventions (mandatory)
+## Project-specific constraints
 
-- Python 3.10+ with type annotations on every function and method
-- Pydantic v2 BaseModel for all data structures crossing module boundaries
-- Raw SQL with parameterized queries (? placeholders). No ORM.
-- Docstrings on every public class, function, and method
 - No live HTTP calls. Any network access must go through an injectable callable
   so tests can swap in a mock (e.g. check_url_exists: Callable[[str], bool])
-
-## Documentation (mandatory — blocking)
-
-For every module you create or significantly modify, write a corresponding
-API doc in $REPO_DIR/docs/api/<module_name>.md. Follow this structure:
-
-\`\`\`markdown
-# <Module Name>
-
-**Module:** \`sefi.<subpackage>.<module>\`
-**Purpose:** One sentence.
-
-## Classes
-
-### ClassName
-Brief description.
-| Method | Args | Returns | Description |
-|--------|------|---------|-------------|
-| method_name | arg: type | type | what it does |
-
-## Functions
-
-### function_name(args) -> return_type
-Brief description. Note any exceptions raised.
-
-## Usage Example
-\`\`\`python
-# minimal working example
-\`\`\`
-\`\`\`
-
-Create $REPO_DIR/docs/api/ if it does not exist.
-Do NOT document private helpers (names starting with _).
-
-## Constraints
-
 - Do NOT write tests (that is the Tester's job)
 - Do NOT commit (that is the Committer's job)
 - Do NOT download corpus databases (zero-corpus design)
+- docs/api/ files go in $REPO_DIR/docs/api/; create the directory if missing
 
 ## When Done
 
@@ -258,24 +225,22 @@ Working directory: $REPO_DIR
 Task just implemented: $task_id
 Task file: $task_file
 
+## Step 0 — Read your role definition first
+
+Read $REPO_DIR/.claude/skills/tester/SKILL.md in full before doing anything else.
+It defines test documentation standards, fix plan management, and the Ralph loop protocol.
+
 ## Instructions
 
 1. Read $task_file to understand what was implemented and its acceptance criteria.
 2. Read every source file created/modified by the Programmer under $REPO_DIR/src/.
-3. Review the code for:
-   - Type annotation coverage
-   - Docstring presence on public APIs
-   - SQL parameterization (no string interpolation)
-   - Correct Pydantic v2 usage
-4. Fix any violations you find directly in the source files.
-5. Write pytest tests in $REPO_DIR/tests/ that cover:
-   - Every acceptance criterion listed in $task_file (one test per criterion minimum)
-   - Key error paths and edge cases
-   - Use unittest.mock or pytest-mock to mock ALL HTTP calls
-     (no live requests to justice.gov or any external URL)
+3. Write pytest tests in $REPO_DIR/tests/ covering every acceptance criterion
+   (one test per criterion minimum) plus key error paths and edge cases.
+4. Project-specific test constraints:
+   - Mock ALL HTTP calls (no live requests to justice.gov or any external URL)
    - Use in-memory SQLite (:memory:) for database tests
-6. Run: python -m pytest $REPO_DIR/tests/ -x -q
-7. Fix failures until the full suite passes.
+5. Run: python -m pytest $REPO_DIR/tests/ -x -q
+6. Fix failures until the full suite passes.
 
 ## When Done
 
