@@ -1,0 +1,26 @@
+[
+  {
+    "claim_id": "INT-001",
+    "claim": "Acosta met with Epstein's lawyers in March 2008 to negotiate the non-prosecution agreement.",
+    "cited_eftas": ["EFTA00039186"],
+    "primary_datasets": [9],
+    "source": "integration-test-fixture",
+    "source_verified": false
+  },
+  {
+    "claim_id": "INT-002",
+    "claim": "Epstein owned a property at 9 East 71st Street used as his primary New York residence.",
+    "cited_eftas": ["EFTA00001042"],
+    "primary_datasets": [1],
+    "source": "integration-test-fixture",
+    "source_verified": false
+  },
+  {
+    "claim_id": "INT-003",
+    "claim": "The non-prosecution agreement was finalized in September 2007, shielding co-conspirators from prosecution.",
+    "cited_eftas": ["EFTA00038900"],
+    "primary_datasets": [9],
+    "source": "integration-test-fixture",
+    "source_verified": false
+  }
+]

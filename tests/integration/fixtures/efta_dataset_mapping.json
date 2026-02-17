@@ -1,0 +1,32 @@
+[
+  {
+    "dataset_number": 1,
+    "range_start": 1,
+    "range_end": 9999,
+    "description": "Dataset 1 - Palm Beach investigation"
+  },
+  {
+    "dataset_number": 2,
+    "range_start": 10000,
+    "range_end": 19999,
+    "description": "Dataset 2 - Contact records"
+  },
+  {
+    "dataset_number": 3,
+    "range_start": 20000,
+    "range_end": 29999,
+    "description": "Dataset 3 - Flight records"
+  },
+  {
+    "dataset_number": 6,
+    "range_start": 30000,
+    "range_end": 39999,
+    "description": "Dataset 6 - Financial records"
+  },
+  {
+    "dataset_number": 9,
+    "range_start": 35000,
+    "range_end": 45000,
+    "description": "Dataset 9 - Email and NPA documents"
+  }
+]

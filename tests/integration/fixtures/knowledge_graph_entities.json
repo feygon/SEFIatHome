@@ -1,0 +1,20 @@
+[
+  {
+    "id": "E001",
+    "name": "Jeffrey Epstein",
+    "type": "person",
+    "aliases": ["J. Epstein"]
+  },
+  {
+    "id": "E002",
+    "name": "Southern Trust Company",
+    "type": "shell_company",
+    "aliases": ["Southern Trust"]
+  },
+  {
+    "id": "E003",
+    "name": "Little Saint James",
+    "type": "property",
+    "aliases": ["Little St. James", "LSJ"]
+  }
+]

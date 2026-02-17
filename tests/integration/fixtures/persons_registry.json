@@ -1,0 +1,20 @@
+[
+  {
+    "id": "P001",
+    "name": "Jeffrey Epstein",
+    "category": "subject",
+    "aliases": ["J. Epstein"]
+  },
+  {
+    "id": "P002",
+    "name": "Alexander Acosta",
+    "category": "government_official",
+    "aliases": ["Alex Acosta", "R. Alexander Acosta"]
+  },
+  {
+    "id": "P003",
+    "name": "Ghislaine Maxwell",
+    "category": "co-conspirator",
+    "aliases": ["G. Maxwell"]
+  }
+]

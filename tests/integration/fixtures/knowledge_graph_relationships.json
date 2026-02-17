@@ -1,0 +1,22 @@
+[
+  {
+    "relationship_id": "R001",
+    "source_entity": "E001",
+    "target_entity": "E002",
+    "relationship_type": "controlled",
+    "weight": 0.9,
+    "date": "2005-03-15",
+    "efta_number": "EFTA00039186",
+    "dataset": 9
+  },
+  {
+    "relationship_id": "R002",
+    "source_entity": "E001",
+    "target_entity": "E003",
+    "relationship_type": "owned",
+    "weight": 1.0,
+    "date": "2005-04-01",
+    "efta_number": "EFTA00001042",
+    "dataset": 1
+  }
+]

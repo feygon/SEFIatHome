@@ -1,0 +1,8 @@
+{
+  "known_urls_200": [
+    "https://www.justice.gov/epstein/files/DataSet%209/EFTA00039186.pdf",
+    "https://www.justice.gov/epstein/files/DataSet%201/EFTA00001042.pdf",
+    "https://www.justice.gov/epstein/files/DataSet%209/EFTA00038900.pdf"
+  ],
+  "note": "These DOJ PDF URLs are stubbed to return HTTP 200 in integration tests. No live network calls are made."
+}
