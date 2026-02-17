@@ -42,10 +42,20 @@ You do NOT write code. You:
 
 1. Spawn Programmer subagents (Sonnet or Opus)
 2. Assign tasks from /todo/
-3. Programmers claim tasks, implement, document
+3. Programmers claim tasks, implement, AND document (see below)
 4. Coordinate API contracts via /docs/api-contracts.md
 5. Gate: API contract changes need HITL review
 ```
+
+#### Programmer documentation directive (MANDATORY — blocking)
+
+Every Programmer agent MUST produce, for each module they create or modify:
+- `/docs/api/<module_name>.md` — public API reference (classes, methods, signatures, usage example)
+- Docstrings on every public class, method, and function in source
+- Type annotations on every function signature
+
+Documentation is NOT optional. The Committer agent MUST verify
+`/docs/api/` files exist before committing. If missing, send back to Programmer.
 
 ### Phase 4: Testing
 ```

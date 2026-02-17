@@ -203,6 +203,39 @@ Task file: $task_file
 - No live HTTP calls. Any network access must go through an injectable callable
   so tests can swap in a mock (e.g. check_url_exists: Callable[[str], bool])
 
+## Documentation (mandatory — blocking)
+
+For every module you create or significantly modify, write a corresponding
+API doc in $REPO_DIR/docs/api/<module_name>.md. Follow this structure:
+
+\`\`\`markdown
+# <Module Name>
+
+**Module:** \`sefi.<subpackage>.<module>\`
+**Purpose:** One sentence.
+
+## Classes
+
+### ClassName
+Brief description.
+| Method | Args | Returns | Description |
+|--------|------|---------|-------------|
+| method_name | arg: type | type | what it does |
+
+## Functions
+
+### function_name(args) -> return_type
+Brief description. Note any exceptions raised.
+
+## Usage Example
+\`\`\`python
+# minimal working example
+\`\`\`
+\`\`\`
+
+Create $REPO_DIR/docs/api/ if it does not exist.
+Do NOT document private helpers (names starting with _).
+
 ## Constraints
 
 - Do NOT write tests (that is the Tester's job)
@@ -264,6 +297,11 @@ Task file: $task_file
 
 1. Run: python -m pytest $REPO_DIR/tests/ -q
    If ANY test fails, STOP. Print "COMMIT BLOCKED: tests failing." and exit.
+
+1b. Verify $REPO_DIR/docs/api/ contains at least one .md file created or
+   modified for this task. If docs/api/ is missing or empty for the modules
+   this task touched, STOP. Print "COMMIT BLOCKED: docs/api/ not written."
+   and exit. Do NOT commit undocumented work.
 
 2. Stage relevant files only:
    git -C $REPO_DIR add src/ tests/ docs/ todo/ pyproject.toml
