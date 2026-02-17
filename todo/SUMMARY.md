@@ -7,7 +7,7 @@
 | US-003 | EFTA URL Builder & Gap Resolution | done | US-001, US-002 |
 | US-004 | Database Adapter (JSON Methods) | done | US-001, US-002 |
 | US-005 | Work Unit Generator: verify_finding | done | US-001, US-003, US-004 |
-| US-006 | Work Unit Generator: decision_chain | pending | US-001, US-003, US-005 |
+| US-006 | Work Unit Generator: decision_chain | done | US-001, US-003, US-005 |
 | US-007 | Findings Store | pending | US-001 |
 | US-008 | Basic Validation Layer | pending | US-001, US-004, US-007 |
 | US-009 | Distribution API | pending | US-001, US-005, US-006, US-007, US-008 |

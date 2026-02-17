@@ -393,6 +393,7 @@ class DatabaseAdapter:
 
 > ✅ Partially Implemented (US-003) — EFTA URL builder and gap resolution algorithm complete in `src/sefi/db/efta.py`.
 > ✅ Implemented (US-005) — `WorkUnit` dataclass and `WorkUnitGenerator` with `verify_finding` type complete in `src/sefi/generator/units.py`.
+> ✅ Implemented (US-006) — `decision_chain` generator with 30-day time-window bucketing and batch size enforcement (20–50 docs) complete in `src/sefi/generator/units.py`.
 
 **Purpose:** Partition the corpus into self-contained work units based on task type and scaling behavior
 
