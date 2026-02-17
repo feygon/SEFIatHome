@@ -4,7 +4,7 @@
 |----|-------|--------|------------|
 | US-001 | Project Scaffolding | done | — |
 | US-002 | Data Fetch & Ingest Bootstrap | done | US-001 |
-| US-003 | EFTA URL Builder & Gap Resolution | pending | US-001, US-002 |
+| US-003 | EFTA URL Builder & Gap Resolution | done | US-001, US-002 |
 | US-004 | Database Adapter (JSON Methods) | pending | US-001, US-002 |
 | US-005 | Work Unit Generator: verify_finding | pending | US-001, US-003, US-004 |
 | US-006 | Work Unit Generator: decision_chain | pending | US-001, US-003, US-005 |

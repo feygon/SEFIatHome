@@ -246,6 +246,8 @@ Reality: These documents exist in Dataset 4 or Dataset 6
 
 ### Resolution Algorithm
 
+> ✅ Implemented (US-003) — `src/sefi/db/efta.py` provides `build_url()`, `resolve_efta()`, `get_primary_dataset()`, `ResolutionResult`, `EftaNumber`, and `EftaUrl`.
+
 Before flagging an EFTA as "missing," the Gap Analysis work unit must try adjacent datasets:
 
 ```python
@@ -386,6 +388,8 @@ class DatabaseAdapter:
 ---
 
 ### Component 2: Work Unit Generator
+
+> ✅ Partially Implemented (US-003) — EFTA URL builder and gap resolution algorithm complete in `src/sefi/db/efta.py`.
 
 **Purpose:** Partition the corpus into self-contained work units based on task type and scaling behavior
 
