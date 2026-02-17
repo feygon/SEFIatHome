@@ -16,29 +16,27 @@ SEFI@Home (Search the Epstein Files Investigation) is a distributed analysis pla
 | Phase 2: Decompose | ✅ Done | 10 US stories in `/todo/` |
 | Phase 3: Implement | ✅ Done | All 10 stories committed and pushed |
 | Phase 4: Test | ✅ Done | 582 tests pass, all mocked |
-| Phase 5: Documentation | ⚠️ Partial | **`/docs/api/` was NOT written by programmers — must be backfilled** |
+| Phase 5: Documentation | ⚠️ Partial | `docs/api/` backfilled ✅ — **Librarian epistemic review still needed** |
 | Phase 6: Deploy | ⏳ Blocked | No API funding yet; live workers deferred |
 
 ---
 
 ## IMMEDIATE NEXT ACTION
 
-**Backfill missing `/docs/api/` documentation**, then proceed to Phase 5 (Librarian review).
+**Spawn Librarian for epistemic review → `/docs/assertions.md`, then HITL gate before Phase 6.**
 
-```
-Spawn a general-purpose (Sonnet) agent with this directive:
-
-  Read every module under src/sefi/ and write docs/api/<module>.md
-  for each one. Modules: config, db/adapter, db/ingest, db/efta,
-  generator/units, store/findings, validation/layer, api/models,
-  api/routes, api/main. Then git add docs/api/ && git commit && git push.
-```
-
-After docs are written, the next action is:
 ```
 /orchestrate document
-Spawn Librarian to create /docs/assertions.md and run epistemic review.
-HITL gate before Phase 6.
+
+Spawn Librarian (general-purpose, sonnet) with this directive:
+  Read ~/.claude/skills/librarian/SKILL.md and
+  .claude/skills/librarian/SKILL.md (project context).
+  Read docs/library/ETHICS.md. Read all docs/api/*.md and
+  docs/library/*. Produce docs/assertions.md — one assertion
+  per module covering: evidence quality, test coverage, ethical
+  constraint compliance, and accessibility of documentation.
+  Score each assertion per the epistemic rubric. Flag any
+  HITL items. Then git add docs/assertions.md && git commit && git push.
 ```
 
 ---
@@ -89,11 +87,10 @@ HITL gate before Phase 6.
 
 ## Known Issues / Tech Debt
 
-- **`/docs/api/` missing** — programmers skipped this; must be backfilled before Phase 5 HITL gate
-- **`/docs/assertions.md` missing** — Librarian hasn't run yet
+- **`/docs/assertions.md` missing** — Librarian Committee not yet integrated into orchestrator.sh; must run manually for Phase 5 HITL gate
 - **`/todo/fix_plan.md` is empty** — no Ralph loops were needed (all tests passed first time)
-- **Orchestrator skill bug (FIXED)** — programmer prompt now includes docs/api directive; committer now gates on docs presence
 - **Testing strategy** — flagged as weakest spec section; no formal test strategy doc written
+- **Skills architecture (session 2026-02-17)** — generic skills moved to `~/.claude/skills/`; project `.claude/skills/` trimmed to 6 lean SEFI-specific overrides
 
 ---
 
@@ -139,7 +136,8 @@ bash orchestrator.sh --loop
 | `docs/WORKFLOW.md` | 6-phase agent workflow with HITL gates |
 | `docs/library/ETHICS.md` | 7 hardcoded research ethics constraints |
 | `todo/SUMMARY.md` | All 10 stories with status |
-| `.claude/skills/*/SKILL.md` | Agent capabilities |
+| `~/.claude/skills/*/SKILL.md` | Generic agent role definitions (personal scope, all projects) |
+| `.claude/skills/*/SKILL.md` | SEFI-specific project overrides (6 skills: programmer, tester, troubleshoot, decomposer, librarian, orchestrator) |
 | `orchestrator.sh` | Autonomous implementation pipeline |
 
 ---
