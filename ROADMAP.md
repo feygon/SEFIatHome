@@ -319,6 +319,8 @@ The Gap Analysis generator must:
 
 ### Component 1 Update: Database Adapter Must Load JSON Exports
 
+✅ Implemented (US-002) — `src/sefi/db/ingest.py` provides `IngestManager` with `ingest_all()` loading all four JSON exports into SQLite working tables (`persons`, `entities`, `relationships`, `efta_mapping`).
+
 Add methods to ingest pre-extracted JSON files into working tables:
 
 ```python
