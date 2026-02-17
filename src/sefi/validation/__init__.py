@@ -5,4 +5,16 @@ are written to the findings store: provenance checks, PII detection, and
 (post-MVP) quorum validation.
 """
 
-__all__: list[str] = []
+from sefi.validation.layer import (
+    PIIMatch,
+    ResultSubmission,
+    ValidationLayer,
+    ValidationResult,
+)
+
+__all__: list[str] = [
+    "PIIMatch",
+    "ResultSubmission",
+    "ValidationLayer",
+    "ValidationResult",
+]
