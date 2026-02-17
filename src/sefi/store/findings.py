@@ -537,7 +537,7 @@ class FindingsStore:
             foreign key enforcement disabled for MVP (see module-level
             docstring).
         """
-        conn = sqlite3.connect(str(db_path))
+        conn = sqlite3.connect(str(db_path), check_same_thread=False)
         conn.row_factory = sqlite3.Row
         # PRAGMA foreign_keys = OFF for MVP:
         # The `work_units` table is a stub; it is not pre-populated in all
