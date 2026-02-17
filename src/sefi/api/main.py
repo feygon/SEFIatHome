@@ -32,6 +32,7 @@ from pathlib import Path
 from fastapi import FastAPI
 
 from sefi.api.routes import router
+from sefi.db.ingest import ensure_data_files
 from sefi.db.adapter import DatabaseAdapter
 from sefi.generator.units import WorkUnitGenerator
 from sefi.store.findings import FindingsStore
@@ -104,6 +105,15 @@ def create_app(
 
     # ---- resolve data directory ----
     resolved_data_dir = data_dir if data_dir is not None else Path("data")
+
+    # Auto-download missing JSON exports on first run
+    if generator is None:  # skip fetch when running with injected test mocks
+        try:
+            fetched = ensure_data_files(resolved_data_dir)
+            if fetched:
+                logger.info("Auto-fetched %d data file(s): %s", len(fetched), fetched)
+        except OSError as exc:
+            logger.warning("Data file fetch failed (server will start without full data): %s", exc)
 
     # ---- FindingsStore ----
     if findings_store is None:

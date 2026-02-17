@@ -16,12 +16,63 @@ from __future__ import annotations
 import json
 import logging
 import sqlite3
+import urllib.request
 from pathlib import Path
 from typing import Any
 
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Source URLs for the four rhowardstone JSON exports (public domain)
+# ---------------------------------------------------------------------------
+_BASE_URL = "https://raw.githubusercontent.com/rhowardstone/Epstein-research-data/main"
+
+EXPORT_URLS: dict[str, str] = {
+    "persons_registry.json":              f"{_BASE_URL}/persons_registry.json",
+    "knowledge_graph_entities.json":      f"{_BASE_URL}/knowledge_graph_entities.json",
+    "knowledge_graph_relationships.json": f"{_BASE_URL}/knowledge_graph_relationships.json",
+    "efta_dataset_mapping.json":          f"{_BASE_URL}/efta_dataset_mapping.json",
+}
+
+
+def ensure_data_files(data_dir: Path) -> list[str]:
+    """Download any missing rhowardstone JSON exports into *data_dir*.
+
+    Each of the four required files is downloaded only if it does not already
+    exist locally.  The download uses the stdlib ``urllib`` so no additional
+    dependencies are required.
+
+    Args:
+        data_dir: Directory to store the downloaded files.  Created if absent.
+
+    Returns:
+        List of filenames that were downloaded (empty if all already present).
+
+    Raises:
+        OSError: If a download fails (network error, HTTP error, etc.).
+    """
+    data_dir.mkdir(parents=True, exist_ok=True)
+    downloaded: list[str] = []
+
+    for filename, url in EXPORT_URLS.items():
+        dest = data_dir / filename
+        if dest.exists():
+            logger.debug("Data file already present: %s", filename)
+            continue
+        logger.info("Downloading %s ...", filename)
+        try:
+            urllib.request.urlretrieve(url, dest)  # noqa: S310 — URL is a hardcoded constant
+            size_kb = dest.stat().st_size // 1024
+            logger.info("Downloaded %s (%d KB)", filename, size_kb)
+            downloaded.append(filename)
+        except Exception as exc:
+            raise OSError(
+                f"Failed to download '{filename}' from {url}: {exc}"
+            ) from exc
+
+    return downloaded
 
 # Maps (file basename) -> (working table name).
 _FILE_TABLE_MAP: dict[str, str] = {
