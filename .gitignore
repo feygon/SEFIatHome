@@ -31,3 +31,26 @@ Thumbs.db
 *.db.gz
 *.tar.bz2
 *.zip
+
+# ── Testing & coverage ────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.mypy_cache/
+
+# ── SEFI@Home: auto-fetched exports (re-downloaded at runtime via ensure_data_files)
+# sample_claims.json is hand-crafted seed data and IS committed — do not add it here
+data/persons_registry.json
+data/knowledge_graph_entities.json
+data/knowledge_graph_relationships.json
+data/efta_dataset_mapping.json
+
+# ── SEFI@Home: generated databases ───────────────────────────────────────────
+data/findings.db
+data/*.db
+
+# ── SEFI@Home: runtime artifacts ─────────────────────────────────────────────
+orchestrator.log
+*.log
+conversation-export.md

@@ -1,0 +1,402 @@
+[
+  {
+    "claim_id": "RC-001",
+    "claim": "Alexander Acosta met with Epstein's lawyers in March 2008 to negotiate the non-prosecution agreement.",
+    "cited_eftas": ["EFTA00039186"],
+    "primary_datasets": [9],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-002",
+    "claim": "Jeffrey Epstein owned a property at 9 East 71st Street in Manhattan used as his primary New York residence.",
+    "cited_eftas": ["EFTA00001042"],
+    "primary_datasets": [1],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-003",
+    "claim": "Epstein traveled between Palm Beach and New York on his private aircraft (N908JE) on multiple occasions in 2005.",
+    "cited_eftas": ["EFTA00012304", "EFTA00012305"],
+    "primary_datasets": [3, 3],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-004",
+    "claim": "The non-prosecution agreement was finalized in September 2007, shielding Epstein and his co-conspirators from federal prosecution.",
+    "cited_eftas": ["EFTA00038900"],
+    "primary_datasets": [9],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-005",
+    "claim": "Epstein's Palm Beach home at 358 El Brillo Way was the primary location of criminal activity documented in the FBI investigation.",
+    "cited_eftas": ["EFTA00000817"],
+    "primary_datasets": [1],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-006",
+    "claim": "Southern Trust Company was a shell entity controlled by Epstein used to funnel payments.",
+    "cited_eftas": ["EFTA00025601"],
+    "primary_datasets": [6],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-007",
+    "claim": "Epstein's aircraft logs show flights to Little Saint James between 2001 and 2006.",
+    "cited_eftas": ["EFTA00012400", "EFTA00012401"],
+    "primary_datasets": [3, 3],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-008",
+    "claim": "The FBI's investigation identified at least 36 underage victims in the Palm Beach case.",
+    "cited_eftas": ["EFTA00001100"],
+    "primary_datasets": [1],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-009",
+    "claim": "Epstein held accounts at Deutsche Bank that were flagged in suspicious activity reports.",
+    "cited_eftas": ["EFTA00043200"],
+    "primary_datasets": [10],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-010",
+    "claim": "Communications between Epstein and co-conspirators show awareness of the ongoing FBI investigation in 2006.",
+    "cited_eftas": ["EFTA00038750"],
+    "primary_datasets": [9],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-011",
+    "claim": "Epstein's contact books included entries for multiple government officials and foreign dignitaries.",
+    "cited_eftas": ["EFTA00005300"],
+    "primary_datasets": [2],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-012",
+    "claim": "DOJ prosecutors in the Southern District of Florida received communications from Epstein's legal team between 2006 and 2007.",
+    "cited_eftas": ["EFTA00039050", "EFTA00039051"],
+    "primary_datasets": [9, 9],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-013",
+    "claim": "Epstein's New Mexico ranch (Zorro Ranch) was referenced in correspondence related to victim recruitment.",
+    "cited_eftas": ["EFTA00015800"],
+    "primary_datasets": [4],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-014",
+    "claim": "The 2008 NPA included a co-conspirator provision that prevented prosecution of named associates.",
+    "cited_eftas": ["EFTA00039200"],
+    "primary_datasets": [9],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-015",
+    "claim": "Epstein registered as a sex offender in Florida in 2009 following his release from Palm Beach County jail.",
+    "cited_eftas": ["EFTA00002100"],
+    "primary_datasets": [1],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-016",
+    "claim": "FBI 302 interview reports document victim statements collected between 2005 and 2007.",
+    "cited_eftas": ["EFTA00001500", "EFTA00001501"],
+    "primary_datasets": [1, 1],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-017",
+    "claim": "Epstein's estate planning documents reference multiple offshore accounts and trusts.",
+    "cited_eftas": ["EFTA00048000"],
+    "primary_datasets": [11],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-018",
+    "claim": "Surveillance records show Epstein at his Manhattan townhouse in the months prior to his 2019 arrest.",
+    "cited_eftas": ["EFTA00062000"],
+    "primary_datasets": [12],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-019",
+    "claim": "Epstein's private plane made multiple transatlantic flights to Paris between 2000 and 2010.",
+    "cited_eftas": ["EFTA00012600"],
+    "primary_datasets": [3],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-020",
+    "claim": "Documents show payments from Epstein entities to individuals matching names of known victims.",
+    "cited_eftas": ["EFTA00025800"],
+    "primary_datasets": [6],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-021",
+    "claim": "The SDFL prosecution team exchanged multiple drafts of the NPA with Epstein's attorneys via email.",
+    "cited_eftas": ["EFTA00039100"],
+    "primary_datasets": [9],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-022",
+    "claim": "Epstein's property at Little Saint James (USVI) was purchased in 1998 through a shell company.",
+    "cited_eftas": ["EFTA00030100"],
+    "primary_datasets": [7],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-023",
+    "claim": "Phone records show contact between Epstein and at least two sitting senators in 2004.",
+    "cited_eftas": ["EFTA00008700"],
+    "primary_datasets": [2],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-024",
+    "claim": "Epstein's 2009 plea deal work release program was approved despite objections from federal prosecutors.",
+    "cited_eftas": ["EFTA00002300"],
+    "primary_datasets": [1],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-025",
+    "claim": "Internal FBI memos from 2007 indicate senior officials were briefed on the Epstein investigation status.",
+    "cited_eftas": ["EFTA00039300"],
+    "primary_datasets": [9],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-026",
+    "claim": "Epstein wired funds to an associate in France weeks before the NPA was signed.",
+    "cited_eftas": ["EFTA00026100"],
+    "primary_datasets": [6],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-027",
+    "claim": "The Palm Beach Police Department opened its investigation of Epstein in March 2005 based on a tip.",
+    "cited_eftas": ["EFTA00000500"],
+    "primary_datasets": [1],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-028",
+    "claim": "Epstein employed a network of recruiters who were paid cash for identifying potential victims.",
+    "cited_eftas": ["EFTA00001800"],
+    "primary_datasets": [1],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-029",
+    "claim": "Evidence of tampering with witness testimony was documented in internal prosecution notes.",
+    "cited_eftas": ["EFTA00039400"],
+    "primary_datasets": [9],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-030",
+    "claim": "Epstein's known associates include individuals who later held senior positions in financial institutions.",
+    "cited_eftas": ["EFTA00010200"],
+    "primary_datasets": [3],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-031",
+    "claim": "The 2019 indictment cited crimes occurring between 2002 and 2005 based on new victim testimony.",
+    "cited_eftas": ["EFTA00060500"],
+    "primary_datasets": [12],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-032",
+    "claim": "Victim impact statements were filed with the court in 2019 detailing abuse at multiple Epstein properties.",
+    "cited_eftas": ["EFTA00061000"],
+    "primary_datasets": [12],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-033",
+    "claim": "Epstein's Rolodex contained over 500 entries; many high-profile names appeared multiple times.",
+    "cited_eftas": ["EFTA00005400"],
+    "primary_datasets": [2],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-034",
+    "claim": "Correspondence between Epstein's New York and Palm Beach offices referenced ongoing victim recruitment in 2004.",
+    "cited_eftas": ["EFTA00018900"],
+    "primary_datasets": [5],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-035",
+    "claim": "The DOJ Office of Professional Responsibility investigated the handling of the 2008 NPA in 2018.",
+    "cited_eftas": ["EFTA00055000"],
+    "primary_datasets": [11],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-036",
+    "claim": "Epstein paid legal fees for co-conspirators who were interviewed by the FBI.",
+    "cited_eftas": ["EFTA00039500"],
+    "primary_datasets": [9],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-037",
+    "claim": "Multiple wire transfers from Epstein accounts totaling over $1 million were made in 2007 to individuals later identified as associates.",
+    "cited_eftas": ["EFTA00026300"],
+    "primary_datasets": [6],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-038",
+    "claim": "Epstein's New York property was searched by the FBI in July 2019, yielding evidence including photographs.",
+    "cited_eftas": ["EFTA00062200"],
+    "primary_datasets": [12],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-039",
+    "claim": "Epstein-connected shell companies appear in Panama Papers records.",
+    "cited_eftas": ["EFTA00030400"],
+    "primary_datasets": [7],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-040",
+    "claim": "Communications obtained via FOIA show DOJ Main Justice was briefed on the Epstein plea before it was finalized.",
+    "cited_eftas": ["EFTA00039600"],
+    "primary_datasets": [9],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-041",
+    "claim": "Epstein's estate was valued at over $500 million at the time of his 2019 arrest.",
+    "cited_eftas": ["EFTA00061500"],
+    "primary_datasets": [12],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-042",
+    "claim": "The NPA required Epstein to pay restitution to victims but the amount was not made public.",
+    "cited_eftas": ["EFTA00039186", "EFTA00039187"],
+    "primary_datasets": [9, 9],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-043",
+    "claim": "Records show Epstein donated to academic institutions as part of a reputational rehabilitation campaign.",
+    "cited_eftas": ["EFTA00046000"],
+    "primary_datasets": [11],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-044",
+    "claim": "Victim advocacy groups were excluded from NPA negotiations in violation of the CVRA.",
+    "cited_eftas": ["EFTA00039700"],
+    "primary_datasets": [9],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-045",
+    "claim": "Epstein's personal calendars show meetings with co-conspirators at his townhouse during the SDFL investigation period.",
+    "cited_eftas": ["EFTA00009100"],
+    "primary_datasets": [2],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-046",
+    "claim": "Financial records indicate Epstein provided gifts and payments to at least 10 individuals connected to his criminal enterprise.",
+    "cited_eftas": ["EFTA00026500"],
+    "primary_datasets": [6],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-047",
+    "claim": "A 2006 FBI threat assessment classified Epstein as a high-risk sex offender.",
+    "cited_eftas": ["EFTA00038600"],
+    "primary_datasets": [9],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-048",
+    "claim": "Documents show Epstein's legal team submitted a 56-page memorandum opposing federal charges in 2007.",
+    "cited_eftas": ["EFTA00039000"],
+    "primary_datasets": [9],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-049",
+    "claim": "Epstein's victim recruitment network was described as multi-tiered in FBI investigative reports.",
+    "cited_eftas": ["EFTA00001200"],
+    "primary_datasets": [1],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  },
+  {
+    "claim_id": "RC-050",
+    "claim": "The SDFL office declined FBI recommendations to seek additional charges beyond the Palm Beach counts.",
+    "cited_eftas": ["EFTA00039800"],
+    "primary_datasets": [9],
+    "source": "rhowardstone/Epstein-research",
+    "source_verified": false
+  }
+]
