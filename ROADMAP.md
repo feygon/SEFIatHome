@@ -946,6 +946,8 @@ Only pursue these if MVP demonstrates value:
 
 ### Integration Tests
 
+✅ Implemented (US-010)
+
 - End-to-end work unit lifecycle (claim -> process -> validate -> store)
 - API contract compliance
 - Multi-worker quorum scenarios

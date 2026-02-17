@@ -11,7 +11,7 @@
 | US-007 | Findings Store | done | US-001 |
 | US-008 | Basic Validation Layer | done | US-001, US-004, US-007 |
 | US-009 | Distribution API | done | US-001, US-005, US-006, US-007, US-008 |
-| US-010 | End-to-End Integration | pending | US-001, US-002, US-003, US-004, US-005, US-006, US-007, US-008, US-009 |
+| US-010 | End-to-End Integration | done | US-001, US-002, US-003, US-004, US-005, US-006, US-007, US-008, US-009 |
 
 ## Dependency Graph
 
