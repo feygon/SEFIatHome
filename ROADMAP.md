@@ -984,6 +984,8 @@ These are not configurable. They are implemented as validation layer rules that 
 
 ## Appendix A: Directory Structure
 
+✅ Implemented (US-001) — Project scaffolding complete: pyproject.toml, src/sefi/ package hierarchy, config.py, subpackage inits, and tests/ tree are all in place.
+
 ```
 sefi-at-home/
 ├── README.md

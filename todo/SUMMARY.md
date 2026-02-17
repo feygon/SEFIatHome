@@ -2,7 +2,7 @@
 
 | ID | Title | Status | Depends On |
 |----|-------|--------|------------|
-| US-001 | Project Scaffolding | pending | — |
+| US-001 | Project Scaffolding | done | — |
 | US-002 | Data Fetch & Ingest Bootstrap | pending | US-001 |
 | US-003 | EFTA URL Builder & Gap Resolution | pending | US-001, US-002 |
 | US-004 | Database Adapter (JSON Methods) | pending | US-001, US-002 |
