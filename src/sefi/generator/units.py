@@ -1,10 +1,21 @@
-"""Work unit dataclass and generator for SEFI@Home verify_finding type.
+"""Work unit dataclass and generator for SEFI@Home verify_finding and decision_chain types.
 
 This module implements the ``WorkUnit`` dataclass and the ``WorkUnitGenerator``
-class.  Each generated ``verify_finding`` unit contains a single claim drawn
-from rhowardstone report data, one or more cited EFTA numbers, the
-corresponding resolved DOJ PDF URLs, and mandatory instruction text that
-includes the de-anonymization prohibition required by EC-007.
+class.  Two work unit types are supported:
+
+``verify_finding``
+    Each unit contains a single claim drawn from rhowardstone report data, one
+    or more cited EFTA numbers, the corresponding resolved DOJ PDF URLs, and
+    mandatory instruction text that includes the de-anonymization prohibition
+    required by EC-007.
+
+``decision_chain``
+    Each unit batches 20–50 document references from the same 30-day time
+    window, drawn from the ingested ``knowledge_graph_relationships.json``
+    data.  The unit's ``input`` dict includes ``time_window_start``,
+    ``time_window_end`` (ISO 8601 date strings), and ``data`` (a list of
+    document reference dicts, each containing at minimum ``efta_number`` and
+    ``url``).
 
 The generator tracks per-unit assignment state in memory and exposes
 ``mark_unit_assigned``, ``mark_unit_complete``, and ``generate_unit``.
@@ -23,6 +34,10 @@ Design notes
   prohibition required by EC-007.
 - ``source_verified`` is always ``False`` for claims from rhowardstone reports
   (EC-006); the claims have not yet been independently confirmed.
+- ``decision_chain`` time-window selection groups relationship records by their
+  ``date`` field into 30-day buckets.  A bucket must contain at least 20
+  unassigned document references to be eligible.  If no eligible bucket
+  exists, :exc:`NoAvailableUnitsError` is raised.
 """
 
 from __future__ import annotations
@@ -30,7 +45,7 @@ from __future__ import annotations
 import json
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -76,6 +91,66 @@ _EXCLUDED_SUFFIXES: frozenset[str] = frozenset(
      ".mp3", ".wav", ".aac", ".flac"}
 )
 
+# ---------------------------------------------------------------------------
+# decision_chain constants (FR-017, Work Unit Types Reference)
+# ---------------------------------------------------------------------------
+
+#: Research path for decision_chain units (NPA Forensics path).
+_DC_PATH: int = 3
+
+#: Difficulty label for decision_chain units.
+_DC_DIFFICULTY: str = "high"
+
+#: Scaling type for decision_chain units.
+_DC_SCALING: str = "multiplying"
+
+#: Human-readable batch size description for decision_chain units.
+_DC_OPTIMAL_BATCH: str = "20-50 docs (same 30-day period)"
+
+#: Mandatory constraints dict for decision_chain units.
+#: ``requires_quorum=True`` because decision_chain is high-stakes (ethical
+#: framework: quorum required).
+_DC_CONSTRAINTS: dict[str, Any] = {
+    "max_output_tokens": 8000,
+    "pii_filter": True,
+    "requires_quorum": True,
+}
+
+#: Minimum number of document references required in a single decision_chain
+#: work unit (FR-013).
+_DC_BATCH_MIN: int = 20
+
+#: Maximum number of document references allowed in a single decision_chain
+#: work unit (FR-013).
+_DC_BATCH_MAX: int = 50
+
+#: Number of days that define a single time window for decision_chain batching.
+_DC_WINDOW_DAYS: int = 30
+
+#: EFTA field names to look up (in priority order) when extracting an EFTA
+#: number from a relationship record.
+_EFTA_FIELD_CANDIDATES: tuple[str, ...] = (
+    "efta_number",
+    "efta_source",
+    "source_efta",
+    "efta",
+    "document_id",
+)
+
+
+# ---------------------------------------------------------------------------
+# Custom exceptions
+# ---------------------------------------------------------------------------
+
+
+class NoAvailableUnitsError(RuntimeError):
+    """Raised when no eligible work unit can be generated.
+
+    For ``verify_finding``: all claims are currently assigned or completed.
+    For ``decision_chain``: no 30-day time window has the minimum number (20)
+    of unassigned document references.
+    """
+
 
 # ---------------------------------------------------------------------------
 # WorkUnit dataclass
@@ -85,19 +160,31 @@ _EXCLUDED_SUFFIXES: frozenset[str] = frozenset(
 class WorkUnit:
     """A self-contained unit of analytical work for a SEFI@Home volunteer.
 
-    The ``verify_finding`` type contains a single claim drawn from rhowardstone
-    reports together with cited EFTA numbers and resolved DOJ PDF URLs.  The
-    worker fetches each PDF directly from justice.gov and returns a structured
-    verdict.
+    Two unit types are defined:
+
+    ``verify_finding``
+        Contains a single claim drawn from rhowardstone reports together with
+        cited EFTA numbers and resolved DOJ PDF URLs.  The worker fetches each
+        PDF directly from justice.gov and returns a structured verdict.
+
+    ``decision_chain``
+        Contains 20–50 document references from within a single 30-day time
+        window.  The worker maps the communication graph (who → whom → when →
+        topic) and returns patterns observed across the batch.
 
     Attributes
     ----------
     unit_id:
-        Unique identifier for this work unit.  Format: ``"verify-{hex12}"``.
+        Unique identifier for this work unit.
+        - ``verify_finding`` format: ``"verify-{hex12}"``
+        - ``decision_chain`` format: ``"dc-{hex12}"``
     type:
-        Work unit type string.  For this module: ``"verify_finding"``.
+        Work unit type string — one of ``"verify_finding"`` or
+        ``"decision_chain"``.
     path:
-        Research path number (1–5).  Verify_finding uses path 5 (Verification).
+        Research path number (1–5).
+        - ``verify_finding``: path 5 (Verification)
+        - ``decision_chain``: path 3 (NPA Forensics)
     difficulty:
         Difficulty label — one of ``"low"``, ``"medium"``, or ``"high"``.
     scaling:
@@ -106,8 +193,11 @@ class WorkUnit:
     optimal_batch:
         Human-readable description of the recommended batch size.
     input:
-        Dictionary containing claim text, cited EFTA numbers, resolved DOJ PDF
-        URLs, and ``source_verified`` provenance flag.
+        Dictionary containing the work payload.
+        - ``verify_finding``: ``claim``, ``cited_eftas``, ``efta_urls``,
+          ``source_verified``.
+        - ``decision_chain``: ``time_window_start``, ``time_window_end``,
+          ``data`` (list of doc refs with ``efta_number`` and ``url``).
     instructions:
         Natural-language task description sent to the worker.  Always includes
         the verbatim de-anonymization prohibition (EC-007).
@@ -173,11 +263,13 @@ class WorkUnit:
         if not isinstance(self.optimal_batch, str) or not self.optimal_batch.strip():
             raise ValueError("optimal_batch must be a non-empty string")
 
-        # input — dict with required keys for verify_finding
+        # input — dict with type-specific required keys
         if not isinstance(self.input, dict):
             raise TypeError("input must be a dict")
         if self.type == "verify_finding":
             self._validate_verify_input(self.input)
+        elif self.type == "decision_chain":
+            self._validate_decision_chain_input(self.input)
 
         # instructions — must contain de-anonymization prohibition
         if not isinstance(self.instructions, str) or not self.instructions.strip():
@@ -252,9 +344,93 @@ class WorkUnit:
                     f"{_doj_prefix!r}, got {url!r}"
                 )
 
+    @staticmethod
+    def _validate_decision_chain_input(input_dict: dict[str, Any]) -> None:
+        """Validate the ``input`` field for a ``decision_chain`` unit.
+
+        Parameters
+        ----------
+        input_dict:
+            The ``input`` field value to validate.
+
+        Raises
+        ------
+        ValueError
+            If ``time_window_start`` or ``time_window_end`` are absent or
+            malformed, if ``time_window_end`` is more than 30 days after
+            ``time_window_start``, or if ``data`` does not contain between 20
+            and 50 document reference dicts each having ``efta_number`` and
+            ``url``.
+        """
+        # time_window_start — non-empty ISO 8601 date string
+        tw_start = input_dict.get("time_window_start")
+        if not isinstance(tw_start, str) or not tw_start.strip():
+            raise ValueError(
+                "input.time_window_start must be a non-empty ISO 8601 date string "
+                "for decision_chain units"
+            )
+
+        # time_window_end — non-empty ISO 8601 date string
+        tw_end = input_dict.get("time_window_end")
+        if not isinstance(tw_end, str) or not tw_end.strip():
+            raise ValueError(
+                "input.time_window_end must be a non-empty ISO 8601 date string "
+                "for decision_chain units"
+            )
+
+        # Parse and validate window constraint (AC-001)
+        try:
+            start_date = date.fromisoformat(tw_start)
+            end_date = date.fromisoformat(tw_end)
+        except ValueError as exc:
+            raise ValueError(
+                f"input.time_window_start and time_window_end must be valid ISO 8601 "
+                f"date strings (YYYY-MM-DD), got start={tw_start!r} end={tw_end!r}"
+            ) from exc
+
+        if end_date < start_date:
+            raise ValueError(
+                f"time_window_end ({tw_end!r}) must not be before "
+                f"time_window_start ({tw_start!r})"
+            )
+        window_days = (end_date - start_date).days
+        if window_days > _DC_WINDOW_DAYS:
+            raise ValueError(
+                f"time_window_end must be within {_DC_WINDOW_DAYS} days of "
+                f"time_window_start; got {window_days} days"
+            )
+
+        # data — list of 20–50 document reference dicts (FR-013, AC-001)
+        data = input_dict.get("data")
+        if not isinstance(data, list):
+            raise ValueError("input.data must be a list for decision_chain units")
+        if not (_DC_BATCH_MIN <= len(data) <= _DC_BATCH_MAX):
+            raise ValueError(
+                f"input.data must contain between {_DC_BATCH_MIN} and {_DC_BATCH_MAX} "
+                f"document references for decision_chain units; got {len(data)}"
+            )
+        _doj_prefix = "https://www.justice.gov/epstein/files/DataSet%20"
+        for i, doc_ref in enumerate(data):
+            if not isinstance(doc_ref, dict):
+                raise ValueError(
+                    f"input.data[{i}] must be a dict, got {type(doc_ref).__name__}"
+                )
+            efta = doc_ref.get("efta_number")
+            if not isinstance(efta, str) or not efta.startswith("EFTA") or len(efta) != 12:
+                raise ValueError(
+                    f"input.data[{i}].efta_number must be in format 'EFTA00000000', "
+                    f"got {efta!r}"
+                )
+            url = doc_ref.get("url")
+            if not isinstance(url, str) or not url.startswith(_doj_prefix):
+                raise ValueError(
+                    f"input.data[{i}].url must be a valid DOJ PDF URL starting with "
+                    f"{_doj_prefix!r}, got {url!r}"
+                )
+
 
 # ---------------------------------------------------------------------------
-# Claim record type alias
+# Type aliases
 # ---------------------------------------------------------------------------
 
 ClaimRecord = dict[str, Any]
@@ -268,60 +444,92 @@ Expected keys:
     source_verified (bool): Whether the source has been independently verified.
 """
 
+RelationshipRecord = dict[str, Any]
+"""A single relationship record as loaded from knowledge_graph_relationships.json.
+
+Expected keys (at minimum):
+    date (str): ISO 8601 date string for when this relationship was documented.
+    efta_number (str | None): EFTA number of the source document, if present.
+    source_entity (str): Source entity identifier.
+    target_entity (str): Target entity identifier.
+    relationship_type (str): Type of relationship.
+"""
+
+DocRef = dict[str, Any]
+"""A document reference dict used in decision_chain ``input.data``.
+
+Required keys:
+    efta_number (str): EFTA-format document identifier (e.g. ``"EFTA00039186"``).
+    url (str): Canonical DOJ PDF URL for this document.
+
+Optional additional keys from the source relationship record are preserved.
+"""
+
 
 # ---------------------------------------------------------------------------
 # WorkUnitGenerator
 # ---------------------------------------------------------------------------
 
 class WorkUnitGenerator:
-    """Generates ``verify_finding`` work units from a pre-loaded claims list.
+    """Generates ``verify_finding`` and ``decision_chain`` work units.
 
-    Each call to ``generate_unit()`` returns a fresh ``WorkUnit`` built from
-    the next available unassigned claim.  The generator cycles through claims
-    in order, skipping those that are currently assigned or already completed.
+    Each call to :meth:`generate_unit` returns a fresh :class:`WorkUnit` for
+    the requested unit type.
 
     Assignment state is tracked in two in-memory structures:
 
     - ``_assignments``: ``dict[str, str | None]`` — maps unit_id to the
-      worker_id that claimed it (or ``None`` if unassigned but generated).
+      worker_id that claimed it (or ``None`` if generated but not yet assigned).
     - ``_completed``: ``set[str]`` — unit_ids that have been marked complete.
-
-    A ``unit_id`` → ``ClaimRecord`` index (``_unit_to_claim``) is maintained so
-    that ``mark_unit_complete`` can locate the underlying claim.
 
     Parameters
     ----------
     claims:
-        List of claim dicts.  Each dict must contain at minimum:
-        ``claim``, ``cited_eftas``, and ``primary_datasets``.
-        If not provided, the generator attempts to load from ``claims_path``.
+        List of claim dicts for ``verify_finding`` generation.  Takes
+        precedence over ``claims_path`` if both are provided.
     claims_path:
-        Path to a JSON file containing a list of claim dicts.  Used only when
-        ``claims`` is not supplied.  Defaults to ``data/sample_claims.json``
-        relative to the current working directory.
+        Path to a JSON file containing an array of claim dicts.  Defaults to
+        ``data/sample_claims.json`` relative to the current directory.
+    relationships:
+        List of relationship dicts for ``decision_chain`` generation.  Each
+        dict must contain at minimum a ``date`` field (ISO 8601) and an EFTA
+        number field (see :data:`_EFTA_FIELD_CANDIDATES`).  Takes precedence
+        over ``relationships_path`` if both are provided.
+    relationships_path:
+        Path to a JSON file containing the knowledge graph relationships array.
+        Defaults to ``data/knowledge_graph_relationships.json``.
     url_builder:
-        Callable that takes ``(efta_number: int, dataset: int)`` and returns
-        a DOJ PDF URL string.  Defaults to the ``build_url`` function from
-        ``sefi.db.efta``.  Injectable for testing without network access.
+        Callable ``(efta_int: int, dataset: int) -> str`` for DOJ URL
+        construction.  Defaults to ``sefi.db.efta.build_url``.  Injectable
+        for testing without network access.
     """
 
     def __init__(
         self,
         claims: list[ClaimRecord] | None = None,
         claims_path: Path | str | None = None,
+        relationships: list[RelationshipRecord] | None = None,
+        relationships_path: Path | str | None = None,
         url_builder: Any = None,
     ) -> None:
-        """Initialise the generator with a list of claims.
+        """Initialise the generator.
 
         Parameters
         ----------
         claims:
             Pre-loaded list of claim dicts.  Takes precedence over
-            ``claims_path`` if both are provided.
+            ``claims_path``.
         claims_path:
             Path to the JSON claims file.  Falls back to
-            ``data/sample_claims.json`` if neither ``claims`` nor a valid
+            ``data/sample_claims.json`` when neither ``claims`` nor
             ``claims_path`` is given.
+        relationships:
+            Pre-loaded list of relationship dicts for decision_chain units.
+            Takes precedence over ``relationships_path``.
+        relationships_path:
+            Path to the JSON relationships file.  Falls back to
+            ``data/knowledge_graph_relationships.json`` when neither
+            ``relationships`` nor ``relationships_path`` is given.
         url_builder:
             Callable ``(efta_int: int, dataset: int) -> str`` for DOJ URL
             construction.  Defaults to ``sefi.db.efta.build_url``.
@@ -332,38 +540,77 @@ class WorkUnitGenerator:
         else:
             self._url_builder = url_builder
 
+        # ---- claims (verify_finding) ----
         if claims is not None:
             raw_claims = claims
         else:
             if claims_path is None:
                 claims_path = Path("data") / "sample_claims.json"
-            raw_claims = self._load_claims(Path(claims_path))
+            raw_claims = self._load_json_list(Path(claims_path), label="claims")
 
         # Filter out any claims referencing DS10 or excluded file types (EC-002)
         self._claims: list[ClaimRecord] = self._filter_claims(raw_claims)
 
-        # unit_id → worker_id (None means generated but unassigned)
+        # ---- relationships (decision_chain) ----
+        if relationships is not None:
+            raw_relationships = relationships
+        else:
+            if relationships_path is None:
+                relationships_path = (
+                    Path("data") / "knowledge_graph_relationships.json"
+                )
+            rpath = Path(relationships_path)
+            if rpath.exists():
+                raw_relationships = self._load_json_list(rpath, label="relationships")
+            else:
+                # Relationships file not yet downloaded — start with empty list.
+                # decision_chain generation will raise NoAvailableUnitsError.
+                raw_relationships = []
+
+        # Filter out DS10 and image/video references (EC-002)
+        self._relationships: list[RelationshipRecord] = self._filter_relationships(
+            raw_relationships
+        )
+
+        # ---- assignment tracking (shared across both types) ----
+
+        # unit_id → worker_id (None = generated but not yet assigned)
         self._assignments: dict[str, str | None] = {}
 
         # unit_ids that have been fully completed
         self._completed: set[str] = set()
 
-        # unit_id → claim record (for lookup in mark_unit_complete)
+        # ---- verify_finding bookkeeping ----
+
+        # unit_id → claim record
         self._unit_to_claim: dict[str, ClaimRecord] = {}
 
         # claim_id → unit_id (to detect if a claim already has a live unit)
         self._claim_to_unit: dict[str, str] = {}
 
+        # ---- decision_chain bookkeeping ----
+
+        # unit_id → frozenset of doc-ref keys (efta_number values) used in that unit
+        self._unit_to_doc_keys: dict[str, frozenset[str]] = {}
+
+        # set of efta_number values currently consumed by an active (non-completed) unit
+        self._active_dc_keys: set[str] = set()
+
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
 
-    def generate_unit(self) -> WorkUnit:
-        """Generate and return the next available ``verify_finding`` work unit.
+    def generate_unit(self, unit_type: str = "verify_finding") -> WorkUnit:
+        """Generate and return the next available work unit for *unit_type*.
 
-        Iterates through the internal claims list looking for a claim that has
-        no currently-assigned (or completed) work unit.  A new ``WorkUnit`` is
-        created and tracked before being returned.
+        Dispatches to the appropriate private method using a ``match``
+        statement (Python 3.10+).
+
+        Parameters
+        ----------
+        unit_type:
+            One of ``"verify_finding"`` or ``"decision_chain"``.  Defaults to
+            ``"verify_finding"`` for backwards compatibility.
 
         Returns
         -------
@@ -372,28 +619,21 @@ class WorkUnitGenerator:
 
         Raises
         ------
-        RuntimeError
-            If all claims have active assignments or are already completed.
+        NoAvailableUnitsError
+            If no eligible unit can be generated for the requested type.
+        ValueError
+            If *unit_type* is not a recognised type string.
         """
-        for claim in self._claims:
-            claim_id = str(claim.get("claim_id", ""))
-            # Skip if this claim already has a live (unfinished) unit
-            if claim_id in self._claim_to_unit:
-                existing_unit_id = self._claim_to_unit[claim_id]
-                if existing_unit_id not in self._completed:
-                    continue  # still assigned or in-flight
-
-            unit = self._build_unit(claim)
-            # Register assignment tracking
-            self._assignments[unit.unit_id] = None  # generated, not yet assigned
-            self._unit_to_claim[unit.unit_id] = claim
-            self._claim_to_unit[claim_id] = unit.unit_id
-            return unit
-
-        raise RuntimeError(
-            "No available claims — all claims are currently assigned or completed. "
-            "Submit results to free up capacity."
-        )
+        match unit_type:
+            case "verify_finding":
+                return self._generate_verify_finding()
+            case "decision_chain":
+                return self._generate_decision_chain()
+            case _:
+                raise ValueError(
+                    f"Unknown unit_type {unit_type!r}. "
+                    "Supported types: 'verify_finding', 'decision_chain'."
+                )
 
     def mark_unit_assigned(self, unit_id: str, worker_id: str) -> None:
         """Record that a worker has claimed a specific work unit.
@@ -427,8 +667,12 @@ class WorkUnitGenerator:
     def mark_unit_complete(self, unit_id: str) -> None:
         """Mark a work unit as fully processed.
 
-        After this call the unit will not appear in subsequent ``generate_unit``
-        calls (FR-019).
+        After this call the unit will not appear in subsequent
+        :meth:`generate_unit` calls (FR-019).
+
+        For ``decision_chain`` units the document keys consumed by the unit
+        are released back to the available pool so that future units may draw
+        from overlapping time windows if needed.
 
         Parameters
         ----------
@@ -443,15 +687,19 @@ class WorkUnitGenerator:
         if unit_id not in self._assignments:
             raise KeyError(f"Unknown unit_id: {unit_id!r}. Generate the unit first.")
         self._completed.add(unit_id)
-        # Release the assignment slot
+        # Release assignment slot
         self._assignments[unit_id] = None
-        # Remove claim-to-unit mapping so the claim could potentially be
-        # re-assigned in post-MVP workflows (e.g., for quorum re-verification).
+
+        # Release verify_finding claim mapping
         claim_record = self._unit_to_claim.get(unit_id)
         if claim_record is not None:
             claim_id = str(claim_record.get("claim_id", ""))
             if self._claim_to_unit.get(claim_id) == unit_id:
                 del self._claim_to_unit[claim_id]
+
+        # Release decision_chain doc keys
+        doc_keys = self._unit_to_doc_keys.pop(unit_id, frozenset())
+        self._active_dc_keys -= doc_keys
 
     def get_status(self) -> dict[str, int]:
         """Return a summary of generator state.
@@ -460,7 +708,9 @@ class WorkUnitGenerator:
         -------
         dict[str, int]
             Dictionary with keys:
-            - ``total_claims``: number of filtered claims available.
+
+            - ``total_claims``: number of filtered verify_finding claims.
+            - ``total_relationships``: number of filtered relationship records.
             - ``total_generated``: number of units ever generated.
             - ``total_assigned``: number currently assigned to a worker.
             - ``total_completed``: number fully completed.
@@ -472,96 +722,309 @@ class WorkUnitGenerator:
         )
         return {
             "total_claims": len(self._claims),
+            "total_relationships": len(self._relationships),
             "total_generated": len(self._assignments),
             "total_assigned": total_assigned,
             "total_completed": len(self._completed),
         }
 
     # ------------------------------------------------------------------
-    # Private helpers
+    # Private dispatch methods
     # ------------------------------------------------------------------
 
-    @staticmethod
-    def _load_claims(path: Path) -> list[ClaimRecord]:
-        """Load and parse a JSON file containing an array of claim dicts.
+    def _generate_verify_finding(self) -> WorkUnit:
+        """Generate the next available ``verify_finding`` work unit.
 
-        Parameters
-        ----------
-        path:
-            Path to the JSON claims file.
+        Iterates through the internal claims list looking for a claim that has
+        no currently-assigned (or completed) work unit.
 
         Returns
         -------
-        list[ClaimRecord]
-            Parsed list of claim dicts.
+        WorkUnit
+            A fully-populated verify_finding work unit.
 
         Raises
         ------
-        FileNotFoundError
-            If the file does not exist.
-        ValueError
-            If the file is not valid JSON or the top-level value is not a list.
+        NoAvailableUnitsError
+            If all claims have active assignments or are already completed.
         """
-        if not path.exists():
-            raise FileNotFoundError(
-                f"Claims file not found: {path}. "
-                "Create data/sample_claims.json or pass a claims list directly."
-            )
-        try:
-            with path.open(encoding="utf-8") as fh:
-                data = json.load(fh)
-        except json.JSONDecodeError as exc:
-            raise ValueError(f"Invalid JSON in claims file {path}: {exc}") from exc
+        for claim in self._claims:
+            claim_id = str(claim.get("claim_id", ""))
+            # Skip if this claim already has a live (unfinished) unit
+            if claim_id in self._claim_to_unit:
+                existing_unit_id = self._claim_to_unit[claim_id]
+                if existing_unit_id not in self._completed:
+                    continue  # still assigned or in-flight
 
-        if not isinstance(data, list):
-            raise ValueError(
-                f"Claims file {path} must contain a JSON array at the top level, "
-                f"got {type(data).__name__}"
-            )
-        return data  # type: ignore[return-value]
+            unit = self._build_verify_unit(claim)
+            # Register assignment tracking
+            self._assignments[unit.unit_id] = None  # generated, not yet assigned
+            self._unit_to_claim[unit.unit_id] = claim
+            self._claim_to_unit[claim_id] = unit.unit_id
+            return unit
 
-    @staticmethod
-    def _filter_claims(claims: list[ClaimRecord]) -> list[ClaimRecord]:
-        """Remove claims that reference DS10 or image/video content (EC-002).
+        raise NoAvailableUnitsError(
+            "No available claims — all claims are currently assigned or completed. "
+            "Submit results to free up capacity."
+        )
 
-        DS10 is the media-files dataset.  Any claim whose ``primary_datasets``
-        list contains 10 is excluded.  Any claim whose cited EFTA filenames
-        suggest image or video content (detected by suffix) is also excluded.
+    def _generate_decision_chain(self) -> WorkUnit:
+        """Generate the next available ``decision_chain`` work unit.
 
-        Parameters
-        ----------
-        claims:
-            Raw list of claim dicts as loaded from JSON.
+        Selects a 30-day time window with at least 20 unassigned document
+        references, then builds a unit from up to 50 of those references.
 
         Returns
         -------
-        list[ClaimRecord]
-            Filtered claims that are safe to distribute as work units.
-        """
-        filtered: list[ClaimRecord] = []
-        for claim in claims:
-            datasets: list[int] = claim.get("primary_datasets", [])
-            if _DS10_DATASET in datasets:
-                continue  # EC-002: no DS10 content
+        WorkUnit
+            A fully-populated decision_chain work unit.
 
-            # Check for excluded file suffixes in any EFTA reference context
-            # (In practice EFTA URLs always end in .pdf; this is a defence-in-depth check)
-            eftas: list[str] = claim.get("cited_eftas", [])
-            skip = False
-            for efta in eftas:
-                for suffix in _EXCLUDED_SUFFIXES:
-                    if efta.lower().endswith(suffix):
-                        skip = True
-                        break
-                if skip:
-                    break
-            if skip:
+        Raises
+        ------
+        NoAvailableUnitsError
+            If no 30-day window contains at least 20 unassigned document
+            references.
+        """
+        window_start, doc_refs = self._select_time_window()
+        unit = self._build_decision_chain_unit(window_start, doc_refs)
+
+        # Track which doc keys this unit consumes
+        consumed_keys: frozenset[str] = frozenset(
+            ref["efta_number"] for ref in doc_refs
+        )
+        self._assignments[unit.unit_id] = None
+        self._unit_to_doc_keys[unit.unit_id] = consumed_keys
+        self._active_dc_keys |= consumed_keys
+        return unit
+
+    # ------------------------------------------------------------------
+    # decision_chain private helpers
+    # ------------------------------------------------------------------
+
+    def _select_time_window(self) -> tuple[date, list[DocRef]]:
+        """Select a 30-day time window containing enough unassigned doc refs.
+
+        Groups all relationship records that have a usable EFTA number and a
+        parseable ``date`` field into 30-day buckets anchored at the earliest
+        date in the dataset.  The buckets are evaluated in chronological order;
+        the first bucket with at least :data:`_DC_BATCH_MIN` unassigned
+        documents is selected.  Up to :data:`_DC_BATCH_MAX` documents are
+        returned from the selected bucket.
+
+        Returns
+        -------
+        tuple[date, list[DocRef]]
+            A tuple of ``(window_start_date, doc_refs)`` where
+            ``window_start_date`` is the :class:`~datetime.date` that begins
+            the selected 30-day window and ``doc_refs`` is a list of between
+            :data:`_DC_BATCH_MIN` and :data:`_DC_BATCH_MAX` document reference
+            dicts.
+
+        Raises
+        ------
+        NoAvailableUnitsError
+            If no window meets the minimum document count requirement, or if
+            the relationships list is empty.
+        """
+        if not self._relationships:
+            raise NoAvailableUnitsError(
+                "No relationship records loaded — cannot generate decision_chain units. "
+                "Ensure knowledge_graph_relationships.json is present in the data/ directory."
+            )
+
+        # Build list of (parsed_date, doc_ref) pairs, skipping records without
+        # a usable EFTA number or a parseable date.
+        dated_refs: list[tuple[date, DocRef]] = []
+        for rel in self._relationships:
+            doc_ref = self._relationship_to_doc_ref(rel)
+            if doc_ref is None:
+                continue  # no usable EFTA or URL
+            date_str = str(rel.get("date", "")).strip()
+            if not date_str:
+                continue
+            try:
+                # Support both full ISO 8601 datetimes and plain dates
+                parsed_date = _parse_date_field(date_str)
+            except ValueError:
+                continue  # skip records with unparseable dates
+
+            # Skip doc refs currently consumed by an active unit (FR-018)
+            efta_key = doc_ref["efta_number"]
+            if efta_key in self._active_dc_keys:
                 continue
 
-            filtered.append(claim)
-        return filtered
+            dated_refs.append((parsed_date, doc_ref))
+
+        if not dated_refs:
+            raise NoAvailableUnitsError(
+                "No unassigned relationship records with usable EFTA numbers and "
+                "dates — cannot generate decision_chain units."
+            )
+
+        # Determine bucket boundaries: 30-day windows starting at the minimum date
+        min_date = min(d for d, _ in dated_refs)
+
+        # Group into 30-day windows
+        buckets: dict[date, list[DocRef]] = {}
+        for parsed_date, doc_ref in dated_refs:
+            delta_days = (parsed_date - min_date).days
+            bucket_index = delta_days // _DC_WINDOW_DAYS
+            bucket_start = min_date + timedelta(days=bucket_index * _DC_WINDOW_DAYS)
+            buckets.setdefault(bucket_start, []).append(doc_ref)
+
+        # Find the first eligible bucket (chronological order, ≥ min docs)
+        for bucket_start in sorted(buckets):
+            candidates = buckets[bucket_start]
+            if len(candidates) >= _DC_BATCH_MIN:
+                selected = candidates[:_DC_BATCH_MAX]
+                return bucket_start, selected
+
+        raise NoAvailableUnitsError(
+            f"No 30-day time window contains at least {_DC_BATCH_MIN} unassigned "
+            "document references. Submit completed units or add more relationship data."
+        )
+
+    def _relationship_to_doc_ref(
+        self, rel: RelationshipRecord
+    ) -> DocRef | None:
+        """Convert a relationship record to a document reference dict.
+
+        Attempts to extract an EFTA number from the relationship record by
+        checking each candidate field name in :data:`_EFTA_FIELD_CANDIDATES`.
+        If a valid EFTA number is found, constructs the DOJ PDF URL and returns
+        a doc ref dict.  Returns ``None`` if no usable EFTA number is found or
+        if the EFTA format is invalid.
+
+        Parameters
+        ----------
+        rel:
+            A single relationship record from the knowledge graph.
+
+        Returns
+        -------
+        DocRef | None
+            A doc ref dict with ``efta_number``, ``url``, and any additional
+            fields from the relationship record; or ``None`` if the record
+            cannot produce a valid doc ref.
+        """
+        efta_str: str | None = None
+        for field_name in _EFTA_FIELD_CANDIDATES:
+            candidate = rel.get(field_name)
+            if isinstance(candidate, str) and candidate.startswith("EFTA") and len(candidate) == 12:
+                if candidate[4:].isdigit():
+                    efta_str = candidate
+                    break
+
+        if efta_str is None:
+            return None
+
+        # Check for excluded file types (EC-002)
+        for suffix in _EXCLUDED_SUFFIXES:
+            if efta_str.lower().endswith(suffix):
+                return None
+
+        # Build the DOJ URL; dataset defaults to 9 (most common) if not
+        # present in the relationship record.
+        dataset: int = int(rel.get("dataset", rel.get("primary_dataset", 9)))
+        efta_int = int(efta_str[4:])
+        url = self._url_builder(efta_int, dataset)
+
+        doc_ref: DocRef = {
+            "efta_number": efta_str,
+            "url": url,
+        }
+        # Preserve additional relationship metadata that may help the worker
+        for extra_key in ("date", "relationship_type", "source_entity", "target_entity"):
+            value = rel.get(extra_key)
+            if value is not None:
+                doc_ref[extra_key] = value
+
+        return doc_ref
+
+    def _build_decision_chain_unit(
+        self,
+        window_start: date,
+        doc_refs: list[DocRef],
+    ) -> WorkUnit:
+        """Construct a ``decision_chain`` :class:`WorkUnit` from selected doc refs.
+
+        Parameters
+        ----------
+        window_start:
+            The first day of the selected 30-day time window.
+        doc_refs:
+            List of document reference dicts, between 20 and 50 entries.
+
+        Returns
+        -------
+        WorkUnit
+            A fully-populated and validated decision_chain work unit.
+        """
+        unit_id = f"dc-{uuid.uuid4().hex[:12]}"
+
+        window_end: date = window_start + timedelta(days=_DC_WINDOW_DAYS)
+        tw_start_str = window_start.isoformat()
+        tw_end_str = window_end.isoformat()
+
+        deadline = (
+            datetime.now(tz=timezone.utc) + timedelta(hours=_DEADLINE_HOURS)
+        ).isoformat()
+
+        instructions = (
+            "You have been provided with a batch of 20–50 DOJ document references "
+            "from a single 30-day time window. Using the PDF URLs in "
+            "`input.data[*].url`, fetch and read each document. Map the "
+            "communication graph: identify who communicated with whom, when, and "
+            "on what topic. Return a structured JSON result with fields: "
+            "`communication_graph` (list of objects, each with `from`, `to`, "
+            "`when` (ISO 8601 date), `topic`, and `efta_reference`) and "
+            "`patterns_observed` (string summarising recurring patterns). "
+            f"{DE_ANON_PROHIBITION}"
+        )
+
+        input_dict: dict[str, Any] = {
+            "time_window_start": tw_start_str,
+            "time_window_end": tw_end_str,
+            "data": list(doc_refs),
+        }
+
+        return WorkUnit(
+            unit_id=unit_id,
+            type="decision_chain",
+            path=_DC_PATH,
+            difficulty=_DC_DIFFICULTY,
+            scaling=_DC_SCALING,
+            optimal_batch=_DC_OPTIMAL_BATCH,
+            input=input_dict,
+            instructions=instructions,
+            constraints=dict(_DC_CONSTRAINTS),  # copy so caller can't mutate template
+            deadline=deadline,
+            source_verified=False,  # EC-006: relationship data not independently verified
+        )
+
+    # ------------------------------------------------------------------
+    # verify_finding private helpers
+    # ------------------------------------------------------------------
 
     def _build_unit(self, claim: ClaimRecord) -> WorkUnit:
+        """Backwards-compatible alias for :meth:`_build_verify_unit`.
+
+        Kept so that code and tests written against US-005 that reference
+        ``_build_unit`` continue to work after the US-006 rename.
+
+        Parameters
+        ----------
+        claim:
+            A validated claim dict.
+
+        Returns
+        -------
+        WorkUnit
+            A fully-populated verify_finding work unit.
+        """
+        return self._build_verify_unit(claim)
+
+    def _build_verify_unit(self, claim: ClaimRecord) -> WorkUnit:
         """Construct a ``WorkUnit`` from a single claim record.
 
         Parameters
@@ -640,6 +1103,156 @@ class WorkUnitGenerator:
             source_verified=source_verified,
         )
 
+    # ------------------------------------------------------------------
+    # Shared private helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _load_json_list(path: Path, label: str = "data") -> list[dict[str, Any]]:
+        """Load and parse a JSON file containing a top-level array.
+
+        Parameters
+        ----------
+        path:
+            Path to the JSON file.
+        label:
+            Human-readable label used in error messages (e.g. ``"claims"``).
+
+        Returns
+        -------
+        list[dict[str, Any]]
+            Parsed list of dicts.
+
+        Raises
+        ------
+        FileNotFoundError
+            If the file does not exist.
+        ValueError
+            If the file is not valid JSON or the top-level value is not a list.
+        """
+        if not path.exists():
+            raise FileNotFoundError(
+                f"{label.capitalize()} file not found: {path}. "
+                f"Create the file or pass a {label} list directly."
+            )
+        try:
+            with path.open(encoding="utf-8") as fh:
+                data = json.load(fh)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"Invalid JSON in {label} file {path}: {exc}") from exc
+
+        if not isinstance(data, list):
+            raise ValueError(
+                f"{label.capitalize()} file {path} must contain a JSON array at the "
+                f"top level, got {type(data).__name__}"
+            )
+        return data  # type: ignore[return-value]
+
+    # Keep the old name as an alias so any existing code (tests) that calls
+    # _load_claims still works.
+    @staticmethod
+    def _load_claims(path: Path) -> list[ClaimRecord]:
+        """Load and parse a JSON claims file.
+
+        Deprecated alias for :meth:`_load_json_list`.  Kept for backwards
+        compatibility with tests written against US-005.
+
+        Parameters
+        ----------
+        path:
+            Path to the JSON claims file.
+
+        Returns
+        -------
+        list[ClaimRecord]
+            Parsed list of claim dicts.
+        """
+        return WorkUnitGenerator._load_json_list(path, label="claims")
+
+    @staticmethod
+    def _filter_claims(claims: list[ClaimRecord]) -> list[ClaimRecord]:
+        """Remove claims that reference DS10 or image/video content (EC-002).
+
+        DS10 is the media-files dataset.  Any claim whose ``primary_datasets``
+        list contains 10 is excluded.  Any claim whose cited EFTA filenames
+        suggest image or video content (detected by suffix) is also excluded.
+
+        Parameters
+        ----------
+        claims:
+            Raw list of claim dicts as loaded from JSON.
+
+        Returns
+        -------
+        list[ClaimRecord]
+            Filtered claims that are safe to distribute as work units.
+        """
+        filtered: list[ClaimRecord] = []
+        for claim in claims:
+            datasets: list[int] = claim.get("primary_datasets", [])
+            if _DS10_DATASET in datasets:
+                continue  # EC-002: no DS10 content
+
+            # Check for excluded file suffixes in any EFTA reference context
+            # (In practice EFTA URLs always end in .pdf; this is a defence-in-depth check)
+            eftas: list[str] = claim.get("cited_eftas", [])
+            skip = False
+            for efta in eftas:
+                for suffix in _EXCLUDED_SUFFIXES:
+                    if efta.lower().endswith(suffix):
+                        skip = True
+                        break
+                if skip:
+                    break
+            if skip:
+                continue
+
+            filtered.append(claim)
+        return filtered
+
+    @staticmethod
+    def _filter_relationships(
+        relationships: list[RelationshipRecord],
+    ) -> list[RelationshipRecord]:
+        """Remove relationship records that reference DS10 or media content (EC-002).
+
+        Excluded records are those where any EFTA candidate field value ends
+        with an excluded suffix, or where a ``dataset`` field value equals 10.
+
+        Parameters
+        ----------
+        relationships:
+            Raw list of relationship dicts.
+
+        Returns
+        -------
+        list[RelationshipRecord]
+            Filtered relationships safe to use in work units.
+        """
+        filtered: list[RelationshipRecord] = []
+        for rel in relationships:
+            # Exclude DS10 media dataset
+            dataset_val = rel.get("dataset", rel.get("primary_dataset"))
+            if dataset_val is not None and int(dataset_val) == _DS10_DATASET:
+                continue
+
+            # Check EFTA candidate fields for excluded suffixes
+            skip = False
+            for field_name in _EFTA_FIELD_CANDIDATES:
+                efta_val = rel.get(field_name, "")
+                if isinstance(efta_val, str):
+                    for suffix in _EXCLUDED_SUFFIXES:
+                        if efta_val.lower().endswith(suffix):
+                            skip = True
+                            break
+                if skip:
+                    break
+            if skip:
+                continue
+
+            filtered.append(rel)
+        return filtered
+
     @staticmethod
     def _parse_efta_int(efta_str: str) -> int:
         """Parse an EFTA string like ``'EFTA00039186'`` into its integer part.
@@ -669,3 +1282,53 @@ class WorkUnitGenerator:
                 f"EFTA numeric portion must be all digits, got {numeric_part!r}"
             )
         return int(numeric_part)
+
+
+# ---------------------------------------------------------------------------
+# Module-level helpers
+# ---------------------------------------------------------------------------
+
+
+def _parse_date_field(date_str: str) -> date:
+    """Parse a date string that may be a full ISO 8601 datetime or a plain date.
+
+    Accepts strings in the following formats:
+    - ``"YYYY-MM-DD"``
+    - ``"YYYY-MM-DDTHH:MM:SS"`` (with optional timezone offset)
+    - ``"YYYY-MM-DDTHH:MM:SS.ffffff"``
+
+    Parameters
+    ----------
+    date_str:
+        The date or datetime string to parse.
+
+    Returns
+    -------
+    date
+        The :class:`~datetime.date` portion of the parsed value.
+
+    Raises
+    ------
+    ValueError
+        If the string cannot be parsed as a date or datetime.
+    """
+    # Try plain date first
+    try:
+        return date.fromisoformat(date_str)
+    except ValueError:
+        pass
+    # Try full datetime (strip timezone offset if present for compatibility)
+    try:
+        # Python 3.10 fromisoformat does not handle 'Z' suffix; normalise
+        normalised = date_str.rstrip("Z").split("+")[0].split("-")
+        # Rejoin — handle negative UTC offsets carefully by only stripping trailing tz
+        # Fall back to datetime.fromisoformat after normalising 'Z'
+        dt_str = date_str
+        if dt_str.endswith("Z"):
+            dt_str = dt_str[:-1] + "+00:00"
+        return datetime.fromisoformat(dt_str).date()
+    except ValueError as exc:
+        raise ValueError(
+            f"Cannot parse date field value {date_str!r}: expected ISO 8601 date "
+            "or datetime string."
+        ) from exc
